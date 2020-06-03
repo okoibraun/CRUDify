@@ -23,6 +23,8 @@ class CRUD
         if($location != NULL) {
             header("Location: {$location}");
             exit;
+        } else {
+            header("Location: {$_SERVER['HTTP_REFERER']}");
         }
     }
     //End Redirection function
