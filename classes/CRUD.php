@@ -8,17 +8,36 @@
 
 class CRUD 
 {
-    function __construct() {
-        
+    /**
+     * Properties
+     * 
+     */
+    public $host;
+    public $username;
+    public $password;
+    public $database;
+
+    /**
+     * Initialize the base class
+     */
+    function __construct($host, $username, $password, $database) {
+        $this->host = $host;
+        $this->username = $username;
+        $this->password = $password;
+        $this->database = $database;
     }
     
-    public function connect($host, $username, $password, $database) {
-        $conn = new mysqli($host, $username, $password, $database);
-        
-        return $conn;
+    /**
+     * Connect Method
+     * @return resource Database connection resource
+     */
+    public function connect() {
+        return new mysqli($this->host, $this->username, $this->password, $this->database);
     }
     
-    //Redirection function
+    /**
+     * Redirection
+     */
     public function redirect($location = NULL) {
         if($location != NULL) {
             header("Location: {$location}");
@@ -27,7 +46,6 @@ class CRUD
             header("Location: {$_SERVER['HTTP_REFERER']}");
         }
     }
-    //End Redirection function
     
     
     //CRUD Operations
@@ -36,7 +54,6 @@ class CRUD
     *@return $result 
     *@return $error
     */
-    
     function list_all($table) {
         global $conn;
         $sql = "SELECT * FROM `{$table}`";
@@ -63,6 +80,14 @@ class CRUD
         }
         
         return $result;
+
+        //Possible Update
+
+        // try {
+        //     return $result;
+        // } catch(Exception $e) {
+        //     throw new Exception("{$e->getMeesage()} : {$conn->error}");
+        // }
     }
     
     //Delete Functions
@@ -255,7 +280,7 @@ class CRUD
     */
     function upload($fieldname, $uploadto, array $filetype=[]) {
 
-        $files=array();
+        $files=[]; //Literal Array definition
         $fdata=$_FILES[$fieldname];
         if(is_array($fdata['name'])) {
             
@@ -268,11 +293,11 @@ class CRUD
                     $this->redirect("{$_SERVER['HTTP_REFERER']}?filetype=notAllowed");
                 } else {
                     $fileIndex++;
-                    $files[]=array(
+                    $files[]=[
                         'name'=>date('Ymd' . time()) . "_{$fileIndex}.{$ext}",
                         'type'=>$fdata['type'][$i],
                         'tmp_name'=>$fdata['tmp_name'][$i]
-                    );
+                    ];
                 }
             }
         } else {
