@@ -29,6 +29,7 @@ class CRUD
     
     /**
      * Connect Method
+     * 
      * @return resource Database connection resource
      */
     public function connect() {
