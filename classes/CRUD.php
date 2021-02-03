@@ -12,10 +12,10 @@ class CRUD
      * Properties
      * 
      */
-    public $host;
-    public $username;
-    public $password;
-    public $database;
+    private $host;
+    private $username;
+    private $password;
+    private $database;
 
     /**
      * Initialize the base class
