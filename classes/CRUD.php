@@ -312,7 +312,7 @@ class CRUD
     }
 
     /**
-    * Log's Out a User that is logged in
+    * Log's Out the current user that is logged in
     * @param string the action to perform or carry out after a successful logout
     * @param string check if the action to be perform to know if it equal to logout
     */
