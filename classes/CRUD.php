@@ -8,27 +8,45 @@
 
 class CRUD 
 {
-    function __construct() {
-        
+    /**
+     * Properties
+     * 
+     */
+    public $host;
+    public $username;
+    public $password;
+    public $database;
+
+    /**
+     * Initialize the base class
+     */
+    function __construct($host, $username, $password, $database) {
+        $this->host = $host;
+        $this->username = $username;
+        $this->password = $password;
+        $this->database = $database;
     }
     
-    public function connect($host, $username, $password, $database) {
-        $conn = new mysqli($host, $username, $password, $database);
-        
-        return $conn;
+    /**
+     * Connect Method
+     * 
+     * @return resource Database connection resource
+     */
+    public function connect() {
+        return new mysqli($this->host, $this->username, $this->password, $this->database);
     }
     
-    //Redirection function
+    /**
+     * Redirection
+     */
     public function redirect($location = NULL) {
         if($location != NULL) {
             header("Location: {$location}");
             exit;
         } else {
-            header("Location: index.php");
-            exit;
+            header("Location: {$_SERVER['HTTP_REFERER']}");
         }
     }
-    //End Redirection function
     
     
     //CRUD Operations
@@ -37,9 +55,7 @@ class CRUD
     *@return $result 
     *@return $error
     */
-    
-    function list_all($table) {
-        global $conn;
+    function list_all($conn, $table) {
         $sql = "SELECT * FROM `{$table}`";
         $result = $conn->query($sql);
         
@@ -54,8 +70,7 @@ class CRUD
     *
     *
     */
-    function get_rec($query) {
-        global $conn;
+    function get($conn, $query) {
         $sql = $query;
         $result = $conn->query($sql);
         
@@ -64,66 +79,30 @@ class CRUD
         }
         
         return $result;
+
+        //Possible Update
+
+        // try {
+        //     return $result;
+        // } catch(Exception $e) {
+        //     throw new Exception("{$e->getMeesage()} : {$conn->error}");
+        // }
     }
     
     //Delete Functions
-    function delete($table, $clause, $recid, $goto) {
-        global $conn;
-        
+    function delete($conn, $table, $clause, $recid, $goto) {        
         if((isset($table, $recid, $clause)) && ($table != "" && $recid != "")) {
             $sql = "DELETE FROM {$table} WHERE {$clause} IN({$recid})";
             $execute = $conn->query($sql) or die($conn->connect_error());
             
             if($execute) {
-                $this->redirect("{$goto}?s=1");
+                $this->redirect("{$goto}");
             } else {
-                $this->redirect("{$goto}?s=0");
+                $this->redirect("{$goto}");
             }
         } else {
-            $this->redirect("{$goto}?s=0");
+            $this->redirect("{$goto}");
         }
-    }
-    
-    /**
-    *
-    * Insert's new record to database table from form or any key=>value pair record
-    *
-    *@param string $table The database table to insert the record to
-    *@param array $post_fields http method(post, get) or key=>value pair
-    *@param array $formats Additional form field format e.g: setting encrypting password field like array("password"=>md5('password'))
-    *@param boolean $avail_btn Checks if submit button in the form has a name and is included in the post parameters
-    */
-    function add_rec($table, array $post_fields, $formats=array(), $avail_btn=true) {
-        global $conn;
-        $error = "";
-        
-        if(!empty($formats) && count($formats) > 0) {
-            foreach($formats as $fkey=>$fval) {
-                $post_fields[$fkey] = $fval;
-            }
-        }
-        
-        $fields = array();
-        $vals = array();
-
-        foreach($post_fields as $field=>$val) {
-            array_push($fields, "`{$field}`");
-            array_push($vals, "'{$conn->real_escape_string($val)}'");
-        }
-        
-        if($avail_btn === true) {
-            array_pop($fields);
-            array_pop($vals);
-        }
-
-        //Conversions
-        $cols = implode(", ", $fields);
-        $data = implode(", ", $vals);
-
-        $sql = "INSERT INTO {$table}({$cols}) VALUES ({$data})";
-        $result = $conn->query($sql) or die($conn->error);
-        
-        return $result;
     }
     
     /**
@@ -135,11 +114,7 @@ class CRUD
     *@param array $formats Additional form field format e.g: setting encrypting password field like array("password"=>md5('password'))
     *@param boolean $avail_btn Checks if submit button in the form has a name and is included in the post parameters
     */
-<<<<<<< HEAD
     function add($conn, $table, array $columns, $formats=[], $data_type=[], $avail_btn=true) {
-=======
-    function add_prepared_rec($conn, $table, array $columns, $formats=array(), $avail_btn=true) {
->>>>>>> master
         $error = "";
         
         if(!empty($formats) && count($formats) > 0) {
@@ -152,19 +127,19 @@ class CRUD
             array_pop($columns);
         }
         
-        $post_data = array(
+        $post_data = [
             "tcols" => [],
             "tvals" => [],
             "qmarks" => [],
             "data_type" => []
-        );
+        ];
 
         foreach($columns as $key=>$val) {
-            if("org_id" === $key) {
+            if((!empty($data_type) && count($data_type) > 0) && isset($data_type[$key])) {
                 array_push($post_data['tcols'], "`{$key}`");
                 array_push($post_data['tvals'], "{$val}");
                 array_push($post_data['qmarks'], "?");
-                array_push($post_data['data_type'], "i");
+                array_push($post_data['data_type'], "{$data_type[$key]}");
             } else {
                 array_push($post_data['tcols'], "`{$key}`");
                 array_push($post_data['tvals'], "{$val}");
@@ -177,22 +152,24 @@ class CRUD
         $tcols = implode(", ", $post_data['tcols']);
         $qmarks = implode(", ", $post_data['qmarks']);
         $data_type = implode("", $post_data['data_type']);
-        $params = array($data_type);
+        $params = [$data_type];
         $k=0;
+
         foreach($post_data['qmarks'] as $f=>$v) {
+
             $k++;
             $params[$k] = & $post_data['tvals'][$f];
             
         }
         
         $stmt = $conn->prepare("INSERT INTO {$table}({$tcols}) VALUES ({$qmarks})");
+        
         //$stmt->bind_param($pbind, $params) or die($stmt->error);
         call_user_func_array(array($stmt, "bind_param"), $params);
         
         if($stmt->execute()) {
             return true;
         } else {
-            //$error = $php_errormsg || $stmt->error;
             $error = $stmt->error;
             return $error;
         }
@@ -211,26 +188,24 @@ class CRUD
     *@param array $formats Additional form field format e.g: setting encrypting password field like array("password"=>md5('password'))
     *@param boolean $avail_btn Checks if submit button in the form has a name and is included in the post parameters
     */
-<<<<<<< HEAD
-    public function update($table, array $columns, array $condition, $formats=[], $data_type=[], $avail_btn=true) {
-=======
-    public function upd_rec_prepared($table, array $post_fields, array $clause, $formats=array(), $avail_btn=true) {
->>>>>>> master
-        global $conn;
+    public function update($conn, $table, array $columns, array $condition, $formats=[], $data_type=[], $avail_btn=true) {
         $error = "";
         
         if(!empty($formats) && count($formats) > 0) {
             foreach($formats as $fkey=>$fval) {
-                $post_fields[$fkey] = $fval;
+                $columns[$fkey] = $fval;
             }
         }
         
-        $post_data = array(
-<<<<<<< HEAD
+        if($avail_btn === true) {
+            array_pop($columns);
+        }
+        
+        $post_data = [
             "tsets" => [],
             "tvals" => [],
             "data_type" => []
-        );
+        ];
 
         foreach($columns as $key=>$val) {
             if((!empty($data_type) && count($data_type) > 0) && isset($data_type[$key])) {
@@ -248,121 +223,50 @@ class CRUD
         $tsets = implode(", ", $post_data['tsets']);
         //$qmarks = implode(", ", $post_data['qmarks']);
         $data_type = implode("", $post_data['data_type']);
-        $params = array($data_type);
+        $params = [$data_type];
         $k=0;
         foreach($post_data['tsets'] as $f=>$v) {
             $k++;
             $params[$k] = & $post_data['tvals'][$f];
-        }
-=======
-            "psets" => array(),
-            "pvals" => array(),
-            "pb" => array(),
-            "vars"=>array()
-        );
-
-        foreach($post_fields as $field=>$val) {
-            array_push($post_data['psets'], "`{$field}`=?");
-            array_push($post_data['pvals'], parse_str($val));
-            array_push($post_data['pb'], "s");
-            array_push($post_data['vars'], "{$field}=>{$val}");
-        }
-        
-        if($avail_btn === true) {
-            array_pop($post_data['psets']);
-            array_pop($post_data['pvals']);
-            array_pop($post_data['pb']);
+            
         }
 
-        //Conversions
-        $pcols = implode(", ", $post_data['psets']);
-        $pdata = implode(", ", $post_data['pvals']);
-        $pbind = implode("", $post_data['pb']);
->>>>>>> master
-
-        $stmt = $conn->prepare("UPDATE {$table} SET {$pcols} WHERE {$clause['clause']}='{$clause['value']}'");
-        $stmt->bind_param($pbind, $pcols);
+        $stmt = $conn->prepare("UPDATE {$table} SET {$tsets} WHERE {$condition['key']}='{$condition['val']}'");
+        //$stmt->bind_param($pbind, $pcols);
+        call_user_func_array(array($stmt, "bind_param"), $params);
         
         if($stmt->execute()) {
-            return "Done";
+            return true;
         }
         
         $stmt->close();
         $conn->close();
-//        return "UPDATE {$table} SET {$pcols} WHERE {$clause['clause']}='{$clause['value']}'";
     }
     
     /**
+    * Performs User login
     *
-    * Updates existing database table record(s) from form or any key=>value pair record
-    *
-    *@param string $table The database table to be updated
-    *@param array $post_fields http method(post, get) or key=>value pair
-    *@param string $clause Clause to be used for update
-    *@param array $formats Additional form field format e.g: setting encrypting password field like array("password"=>md5('password'))
-    *@param boolean $avail_btn Checks if submit button in the form has a name and is included in the post parameters
+    * @param $query
+    * @return array if true and bool(false) if false
     */
-    public function upd_rec($table, array $post_fields, array $clause, array $formats=null, $avail_btn=true) {
-        global $conn;
-        $error = "";
-        
-        if(!empty($formats) && count($formats) > 0) {
-            foreach($formats as $fkey=>$fval) {
-                $post_fields[$fkey] = $fval;
-            }
-        }
-        
-        $post_data = array(
-            "psets" => array()
-        );
-
-        foreach($post_fields as $field=>$val) {
-            array_push($post_data['psets'], "`{$field}`='" .$conn->real_escape_string($val) . "'");
-        }
-        
-        if($avail_btn === true) {
-            array_pop($post_data['psets']);
-        }
-
-        //Conversions
-        $pcols = implode(", ", $post_data['psets']);
-
-        $stmt = "UPDATE {$table} SET {$pcols} WHERE {$clause['clause']}='{$clause['value']}'";
-        //die($stmt);
-        $result = $conn->query($stmt);
-        
-        if($result) {
-            return $result;
-        } else {
-            die($conn->error);
-        }
-    }
-    
-    /**
-    * Performs User loin
-    *
-    * @param $query 
-    */
-    public function login($query) {
-        global $conn;
+    public function login($conn, $query) {
 
         $result = $conn->query($query) or die($conn->error);
 
-        $row = $result->fetch_assoc();
+        $data = $result->fetch_assoc();
 
-        $returned = $result->num_rows;
+        $rows = $result->num_rows;
         
-        if($returned != 0) {
-            foreach($row as $key=>$value) {
+        if($rows != 0) {
+            foreach($data as $key=>$value) {
                 $_SESSION[$key] = $value;
             }
             
-            return $row;
+            return $data;
         } else {
-            return "Error";
+            return false;
         }
     }
-<<<<<<< HEAD
     
     /**
     * Uploads Multiple File
@@ -374,7 +278,11 @@ class CRUD
     */
     function upload($fieldname, $uploadto, array $filetype=[]) {
 
-        $files=array();
+        $files=[
+            'name'=>[],
+            'type'=>[],
+            'tmp_name'=>[]
+        ]; //Literal Array definition
         $fdata=$_FILES[$fieldname];
         if(is_array($fdata['name'])) {
             
@@ -387,11 +295,9 @@ class CRUD
                     $this->redirect("{$_SERVER['HTTP_REFERER']}?filetype=notAllowed");
                 } else {
                     $fileIndex++;
-                    $files[]=array(
-                        'name'=>date('Ymd' . time()) . "_{$fileIndex}.{$ext}",
-                        'type'=>$fdata['type'][$i],
-                        'tmp_name'=>$fdata['tmp_name'][$i]
-                    );
+                    array_push($files['name'], date('Ymd') . time() . "_{$fileIndex}.{$ext}");
+                    array_push($files['type'], $fdata['type'][$i]);
+                    array_push($files['tmp_name'], $fdata['tmp_name'][$i]);
                 }
             }
         } else {
@@ -405,25 +311,22 @@ class CRUD
 
         return $files;
     }
-=======
->>>>>>> master
 
     /**
-    * Log's Out a User that is logged in
-    * @param string 
-    * @param string
+    * Log's Out the current user that is logged in
+    * @param string the action to perform or carry out after a successful logout
+    * @param string check if the action to be perform to know if it equal to logout
     */
     public function logout($action, $check) {
-
         if(isset($action) && $action == "logout" && isset($check) && $check == "true") {
             for($i=0; $i<=count($_SESSION); $i++) {
                 $_SESSION[$i] = "";
                 unset($_SESSION[$i]);
             }
 
-            $destroy = session_destroy();
+            session_destroy();
 
-            return $destroy;
+            return true;
         }
     }
     
