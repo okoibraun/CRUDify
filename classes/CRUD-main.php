@@ -12,10 +12,10 @@ class CRUD
      * Properties
      * 
      */
-    public $host;
-    public $username;
-    public $password;
-    public $database;
+    private $host;
+    private $username;
+    private $password;
+    private $database;
 
     /**
      * Initialize the base class
@@ -54,7 +54,8 @@ class CRUD
     *@return $result 
     *@return $error
     */
-    function list_all($conn, $table) {
+    function list_all($table) {
+        global $conn;
         $sql = "SELECT * FROM `{$table}`";
         $result = $conn->query($sql);
         
@@ -69,7 +70,8 @@ class CRUD
     *
     *
     */
-    function get($conn, $query) {
+    function get($query) {
+        global $conn;
         $sql = $query;
         $result = $conn->query($sql);
         
@@ -89,18 +91,20 @@ class CRUD
     }
     
     //Delete Functions
-    function delete($conn, $table, $clause, $recid, $goto) {        
+    function delete($table, $clause, $recid, $goto) {
+        global $conn;
+        
         if((isset($table, $recid, $clause)) && ($table != "" && $recid != "")) {
             $sql = "DELETE FROM {$table} WHERE {$clause} IN({$recid})";
             $execute = $conn->query($sql) or die($conn->connect_error());
             
             if($execute) {
-                $this->redirect("{$goto}");
+                $this->redirect("{$goto}?s=1");
             } else {
-                $this->redirect("{$goto}");
+                $this->redirect("{$goto}?s=0");
             }
         } else {
-            $this->redirect("{$goto}");
+            $this->redirect("{$goto}?s=0");
         }
     }
     
@@ -126,12 +130,12 @@ class CRUD
             array_pop($columns);
         }
         
-        $post_data = [
+        $post_data = array(
             "tcols" => [],
             "tvals" => [],
             "qmarks" => [],
             "data_type" => []
-        ];
+        );
 
         foreach($columns as $key=>$val) {
             if((!empty($data_type) && count($data_type) > 0) && isset($data_type[$key])) {
@@ -151,24 +155,21 @@ class CRUD
         $tcols = implode(", ", $post_data['tcols']);
         $qmarks = implode(", ", $post_data['qmarks']);
         $data_type = implode("", $post_data['data_type']);
-        $params = [$data_type];
+        $params = array($data_type);
         $k=0;
-
         foreach($post_data['qmarks'] as $f=>$v) {
-
             $k++;
             $params[$k] = & $post_data['tvals'][$f];
-            
         }
         
         $stmt = $conn->prepare("INSERT INTO {$table}({$tcols}) VALUES ({$qmarks})");
-        
         //$stmt->bind_param($pbind, $params) or die($stmt->error);
         call_user_func_array(array($stmt, "bind_param"), $params);
         
         if($stmt->execute()) {
             return true;
         } else {
+            //$error = $php_errormsg || $stmt->error;
             $error = $stmt->error;
             return $error;
         }
@@ -187,7 +188,8 @@ class CRUD
     *@param array $formats Additional form field format e.g: setting encrypting password field like array("password"=>md5('password'))
     *@param boolean $avail_btn Checks if submit button in the form has a name and is included in the post parameters
     */
-    public function update($conn, $table, array $columns, array $condition, $formats=[], $data_type=[], $avail_btn=true) {
+    public function update($table, array $columns, array $condition, $formats=[], $data_type=[], $avail_btn=true) {
+        global $conn;
         $error = "";
         
         if(!empty($formats) && count($formats) > 0) {
@@ -222,12 +224,11 @@ class CRUD
         $tsets = implode(", ", $post_data['tsets']);
         //$qmarks = implode(", ", $post_data['qmarks']);
         $data_type = implode("", $post_data['data_type']);
-        $params = [$data_type];
+        $params = array($data_type);
         $k=0;
         foreach($post_data['tsets'] as $f=>$v) {
             $k++;
-            $params[$k] = & $post_data['tvals'][$f];
-            
+            $params[$k] = & $post_data['tvals'][$f];   
         }
 
         $stmt = $conn->prepare("UPDATE {$table} SET {$tsets} WHERE {$condition['key']}='{$condition['val']}'");
@@ -248,20 +249,21 @@ class CRUD
     * @param $query
     * @return array if true and bool(false) if false
     */
-    public function login($conn, $query) {
+    public function login($query) {
+        global $conn;
 
         $result = $conn->query($query) or die($conn->error);
 
-        $data = $result->fetch_assoc();
+        $row = $result->fetch_assoc();
 
-        $rows = $result->num_rows;
+        $returned = $result->num_rows;
         
-        if($rows != 0) {
-            foreach($data as $key=>$value) {
+        if($returned != 0) {
+            foreach($row as $key=>$value) {
                 $_SESSION[$key] = $value;
             }
             
-            return $data;
+            return $row;
         } else {
             return false;
         }
@@ -277,11 +279,7 @@ class CRUD
     */
     function upload($fieldname, $uploadto, array $filetype=[]) {
 
-        $files=[
-            'name'=>[],
-            'type'=>[],
-            'tmp_name'=>[]
-        ]; //Literal Array definition
+        $files=[]; //Literal Array definition
         $fdata=$_FILES[$fieldname];
         if(is_array($fdata['name'])) {
             
@@ -294,9 +292,11 @@ class CRUD
                     $this->redirect("{$_SERVER['HTTP_REFERER']}?filetype=notAllowed");
                 } else {
                     $fileIndex++;
-                    array_push($files['name'], date('Ymd') . time() . "_{$fileIndex}.{$ext}");
-                    array_push($files['type'], $fdata['type'][$i]);
-                    array_push($files['tmp_name'], $fdata['tmp_name'][$i]);
+                    $files[]=[
+                        'name'=>date('Ymd' . time()) . "_{$fileIndex}.{$ext}",
+                        'type'=>$fdata['type'][$i],
+                        'tmp_name'=>$fdata['tmp_name'][$i]
+                    ];
                 }
             }
         } else {
@@ -312,20 +312,21 @@ class CRUD
     }
 
     /**
-    * Log's Out a User that is logged in
+    * Log's Out the current user that is logged in
     * @param string the action to perform or carry out after a successful logout
-    * @param string check if the action to be perform to know if it equal to logout
+    * @param string checks the action to be performed when logging out the currect logged in user
     */
     public function logout($action, $check) {
+
         if(isset($action) && $action == "logout" && isset($check) && $check == "true") {
             for($i=0; $i<=count($_SESSION); $i++) {
                 $_SESSION[$i] = "";
                 unset($_SESSION[$i]);
             }
 
-            session_destroy();
+            $destroy = session_destroy();
 
-            return true;
+            return $destroy;
         }
     }
     
