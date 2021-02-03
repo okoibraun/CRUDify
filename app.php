@@ -8,7 +8,7 @@ function loadClasses($class) {
 
 spl_autoload_register('loadClasses');
 
-//Instantiating the academy App Class
+//Instantiating the CRUD Class
 $crud = new CRUD;
 
 //Making Connection to Database
