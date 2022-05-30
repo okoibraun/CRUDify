@@ -2,6 +2,16 @@
 
 class User extends CRUD
 {
+    // /**
+    //  * Propertiees
+    //  */
+    // private $username;
+    // private $password;
+
+    // function __construct($username, $password) {
+    //     $this->username = $username;
+    //     $this->password = $password;
+    // }
 
     /**
     * Performs User login
