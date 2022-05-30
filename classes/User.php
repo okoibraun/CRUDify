@@ -1,49 +1,48 @@
 <?php
 
-class User extends Paysoft
+class User extends CRUD
 {
+
     /**
-    * Performs User loin
+    * Performs User login
     *
     * @param $query
     * @return array if true and bool(false) if false
     */
-    public function login($query) {
-        global $conn;
+    public function login($conn, $query) {
 
         $result = $conn->query($query) or die($conn->error);
 
-        $row = $result->fetch_assoc();
+        $data = $result->fetch_assoc();
 
-        $returned = $result->num_rows;
+        $rows = $result->num_rows;
         
-        if($returned != 0) {
-            foreach($row as $key=>$value) {
+        if($rows != 0) {
+            foreach($data as $key=>$value) {
                 $_SESSION[$key] = $value;
             }
             
-            return $row;
+            return $data;
         } else {
             return false;
         }
     }
 
     /**
-    * Log's Out a User that is logged in
-    * @param string 
-    * @param string
+    * Log's Out the current user that is logged in
+    * @param string the action to perform or carry out after a successful logout
+    * @param string check if the action to be perform to know if it equal to logout
     */
     public function logout($action, $check) {
-
         if(isset($action) && $action == "logout" && isset($check) && $check == "true") {
             for($i=0; $i<=count($_SESSION); $i++) {
                 $_SESSION[$i] = "";
                 unset($_SESSION[$i]);
             }
 
-            $destroy = session_destroy();
+            session_destroy();
 
-            return $destroy;
+            return true;
         }
     }
     
