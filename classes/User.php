@@ -34,6 +34,7 @@ class User extends CRUD
     * @param string check if the action to be perform to know if it equal to logout
     */
     public function logout($action, $check) {
+        
         if(isset($action) && $action == "logout" && isset($check) && $check == "true") {
             for($i=0; $i<=count($_SESSION); $i++) {
                 $_SESSION[$i] = "";
