@@ -79,14 +79,6 @@ class CRUD
         }
         
         return $result;
-
-        //Possible Update
-
-        // try {
-        //     return $result;
-        // } catch(Exception $e) {
-        //     echo "Error! : {$e->getMeesage()}");
-        // }
     }
     
     //Delete Functions
