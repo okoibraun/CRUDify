@@ -22,3 +22,17 @@ $conn = $crud->connect();
  * Using CRUDify add() method to add data to databse
  * $crud->update($conn, 'db_table', $_POST, $format, false)  
  */
+
+//Possible Update
+
+// try {
+//     return $result;
+// } catch(Exception $e) {
+//     echo "Error! : {$e->getMeesage()}";
+// }
+
+ try {
+     $get_users = $crud->get($conn, "SELECT * FROM tbl_users WHERE id={$_GET['id']}");
+ } catch(Exception $e) {
+     echo "Error!: {$e->getMessage()}";
+ }
