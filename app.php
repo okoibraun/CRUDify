@@ -9,10 +9,10 @@ function loadClasses($class) {
 spl_autoload_register('loadClasses');
 
 //Instantiating the CRUD Class
-$crud = new CRUD;
+$crud = new CRUD($server, $db_user, $db_password, $db);
 
 //Making Connection to Database
-$conn = $crud->connect($server, $db_user, $db_password, $db);
+$conn = $crud->connect();
 
 /**
  * Using CRUDify add() method to add data to databse
