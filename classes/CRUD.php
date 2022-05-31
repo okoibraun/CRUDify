@@ -85,7 +85,7 @@ class CRUD
         // try {
         //     return $result;
         // } catch(Exception $e) {
-        //     throw new Exception("{$e->getMeesage()} : {$conn->error}");
+        //     echo "Error! : {$e->getMeesage()}");
         // }
     }
     
